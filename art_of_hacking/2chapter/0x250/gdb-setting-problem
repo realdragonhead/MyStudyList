@@ -1,0 +1,39 @@
+맥 os intel 스타일 디스어셈블링 문제
+그냥 objdump -M intel -D a.out 으로 되는것이 아니고
+objdump -disassemble -x86-asm-syntax=intel  옵션을 이용해서 출력해야
+제대로 결과값이 나온다.
+
+gdb 현재 맥에서 codesigned 가 안되서 진행이 안됨
+<에러 메세지>
+Starting program: /Users/dragonheadreal/Documents/dragonnest/mystudy/art_of_hacking/09.10.2020/a.out
+Unable to find Mach task port for process-id 46438: (os/kern) failure (0x5).
+ (please check gdb is codesigned - see taskgated(8))
+
+<해결>
+https://dol9.tistory.com/231 여기서 말한것처럼
+codesign 문제 인걸 파악하고, keychain activity에 접속하여 인증서 생성하고
+인증서 이름은 gdb-cert 자체서명 루트후 저장은 시스템에 저장하고
+codesign -s gdb-cert /usr/local/bin/gdb
+명령어로 인증서 설정까지 하고
+activity monitor 에 접속해서 taskgated 중지 시킴
+
+위 같은 과정 진행하고
+
+gdb -q ./a.out 를 실행시켰음에도 불구하고, 계속 codesign 문제 발생
+
+그래서
+https://sourceware.org/gdb/wiki/PermissionsDarwin
+에서 설명한 방법대로 cmd 환경에서 위와 같은 과정을 진행
+
+그래도 마찬가지로 
+Starting program: /Users/dragonheadreal/Documents/dragonnest/mystudy/art_of_hacking/09.10.2020/a.out
+[New Thread 0x1003 of process 15303]
+이렇게만 나오고 프로그램이 정지하는 문제 발생
+
+<최종해결>
+인증서 다시 모두 삭제하고 다시 생성하고,
+codesign -s gdb-cert /usr/local/bin/gdb
+명령어를 이용해서 새롭게 설정 후
+이번에는 sudo 명령어를 붙여 실행하니까 정상적으로 동작
+
+/usr/local/Celler/gdb/8.0.1/bin/gdb 위치
